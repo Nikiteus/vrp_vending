@@ -42,11 +42,11 @@ Citizen.CreateThread(function()
 			for i = 1, #machineNames do
 				buttonsMessage[machineNames[i] .. " ($" .. machineInfo.price[i] .. ")"] = Config.PurchaseButtons[i]
 				if IsControlJustPressed(1, Config.PurchaseButtons[i]) then
-					TriggerServerCallback('esx_vending:checkMoneyandInvent', function(response)
+					TriggerServerCallback('xnVending:checkMoneyandInvent', function(response)
 						if response == "cash" then
-							ShowNotification("~r~You don't have enough cash")
+							ShowNotification("~r~У вас недостаточно денег")
 						elseif response == "inventory" then
-							ShowNotification("You cannot carry any more ~y~" .. machineNames[i])
+							ShowNotification("У вас недостаточно места в инвентаре ~y~" .. machineNames[i])
 						else
 							usingMachine = true
 							local ped = PlayerPedId()
@@ -85,7 +85,7 @@ Citizen.CreateThread(function()
 								DeleteEntity(canModel)
 							end
 							SetModelAsNoLongerNeeded(machineInfo.prop[i])
-							TriggerServerCallback('esx_vending:checkMoneyandInvent', function(response) end, machine, i, true)
+							TriggerServerCallback('xnVending:checkMoneyandInvent', function(response) end, machine, i, true)
 							usingMachine = false
 						end
 					end, machine, i, false)

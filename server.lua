@@ -4,20 +4,16 @@ vRP = Proxy.getInterface("vRP")
 local Config = module("xnVending", "config")
 
 TryGiveInventoryItem = function(source, cb, machine, entry, confirm)
-	local user_id = vRP.getUserId({source})
+	local user = vRP.users_by_source[source]
 	local item = Config.Machines[machine]
 	local itemid = item.item[entry]
 	local price = item.price[entry]
-	-- Make sure we can afford the item
-	if vRP.getMoney({user_id}) >= price then
-		local weight = vRP.getItemWeight({itemid})
-		local remaining = vRP.getInventoryMaxWeight({user_id}) - vRP.getInventoryWeight({user_id})
-		-- Make sure we can carry the item
-		if weight <= remaining then
-			-- Give and pay
+
+	if user:tryPayment(price, true) then
+		if user:tryGiveItem(itemid, 1, true, false) then
 			if confirm then
-				vRP.giveInventoryItem({user_id, itemid, 1, true})
-				vRP.tryPayment({user_id, price})
+				user:tryGiveItem(itemid, 1, false, false)
+				user:tryPayment(price, false)
 			end
 			cb(true)
 		else
@@ -31,7 +27,7 @@ end
 RegisterServerEvent('xnVending:triggerServerCallback')
 AddEventHandler('xnVending:triggerServerCallback', function(name, requestId, ...)
 	local playerId = source
-	if name == "esx_vending:checkMoneyandInvent" then
+	if name == "xnVending:checkMoneyandInvent" then
 		TryGiveInventoryItem(playerId, function(...)
 			TriggerClientEvent('xnVending:serverCallback', playerId, requestId, ...)
 		end, ...)
