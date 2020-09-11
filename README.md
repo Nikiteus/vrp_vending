@@ -1,7 +1,5 @@
 Adaptation of xnVending for vRP 2
-
 Original author: smallo92
-
 https://github.com/smallo92/xnVending
 
 Original README:
