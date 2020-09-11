@@ -88,7 +88,7 @@ Citizen.CreateThread(function()
 							TriggerServerCallback('xnVending:checkMoneyandInvent', function(response) end, machine, i, true)
 							usingMachine = false
 						end
-					end, machine, i, false)
+					end, machine, i, true)
 				end
 			end
 			local scaleForm = setupScaleform("instructional_buttons", buttonsMessage)
