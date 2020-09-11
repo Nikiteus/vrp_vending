@@ -1,64 +1,28 @@
-if Config.Framework == "ESX" or Config.Framework == "NewESX" then
-	-- ESX Compatibility code
-	ESX = nil
-	Citizen.CreateThread(function()
-		while ESX == nil do
-			TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-			Citizen.Wait(0)
-		end
-	end)
-	ShowNotification = function(str)
-		ESX.ShowNotification(str)
-	end
-	TriggerServerCallback = function(...)
-		ESX.TriggerServerCallback(...)
-	end
-elseif Config.Framework == "vRP" then
-	-- vRP Compatibility code
-	vRP = Proxy.getInterface("vRP")
-	ShowNotification = function(str)
-		vRP.notify({str})
-	end
+local Proxy = module("vrp", "lib/Proxy")
+vRP = Proxy.getInterface("vRP")
 
-	-- ESX.TriggerServerCallback (https://github.com/ESX-Org/es_extended/blob/ff9930068f83af6adf78275b2581a0e5ea54a3bf/client/functions.lua#L76)
-	ServerCallbacks = {}
-	CurrentRequestId = 0
-	TriggerServerCallback = function(name, cb, ...)
-		ServerCallbacks[CurrentRequestId] = cb
-		TriggerServerEvent("xnVending:triggerServerCallback", name, CurrentRequestId, ...)
-		CurrentRequestId = (CurrentRequestId + 1) % 65535
-	end
-	RegisterNetEvent('xnVending:serverCallback')
-	AddEventHandler('xnVending:serverCallback', function(requestId, ...)
-		if ServerCallbacks[requestId] then
-			ServerCallbacks[requestId](...)
-			ServerCallbacks[requestId] = nil
-		end
-	end)
-else
-	-- Standalone
-	ShowNotification = function(str)
-		SetNotificationTextEntry("STRING")
-	    AddTextComponentString(str)
-	    DrawNotification(true, false)
-	end
+local Config = module("xnVending", "config")
 
-	-- ESX.TriggerServerCallback (https://github.com/ESX-Org/es_extended/blob/ff9930068f83af6adf78275b2581a0e5ea54a3bf/client/functions.lua#L76)
-	ServerCallbacks = {}
-	CurrentRequestId = 0
-	TriggerServerCallback = function(name, cb, ...)
-		ServerCallbacks[CurrentRequestId] = cb
-		TriggerServerEvent("xnVending:triggerServerCallback", name, CurrentRequestId, ...)
-		CurrentRequestId = (CurrentRequestId + 1) % 65535
-	end
-	RegisterNetEvent('xnVending:serverCallback')
-	AddEventHandler('xnVending:serverCallback', function(requestId, ...)
-		if ServerCallbacks[requestId] then
-			ServerCallbacks[requestId](...)
-			ServerCallbacks[requestId] = nil
-		end
-	end)
+ShowNotification = function(str)
+	vRP.notify({str})
 end
+
+ServerCallbacks = {}
+CurrentRequestId = 0
+
+TriggerServerCallback = function(name, cb, ...)
+	ServerCallbacks[CurrentRequestId] = cb
+	TriggerServerEvent("xnVending:triggerServerCallback", name, CurrentRequestId, ...)
+	CurrentRequestId = (CurrentRequestId + 1) % 65535
+end
+
+RegisterNetEvent('xnVending:serverCallback')
+AddEventHandler('xnVending:serverCallback', function(requestId, ...)
+	if ServerCallbacks[requestId] then
+		ServerCallbacks[requestId](...)
+		ServerCallbacks[requestId] = nil
+	end
+end)
 
 local animPlaying = false
 local usingMachine = false

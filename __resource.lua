@@ -8,13 +8,15 @@ download 'https://github.com/smallo92/xnVending'
 description 'Allows players to use vending machines'
 
 server_scripts {
-	'config.lua',
-	'@vrp/lib/utils.lua', -- for vRP Compatibility
-	'server/server.lua'
+	'@vrp/lib/utils.lua',
+	'server_load.lua'
 }
 
 client_scripts {
-	'config.lua',
-	'client/vrp_proxy.lua', -- for vRP Compatibility
-	'client/client.lua'
+	'@vrp/lib/utils.lua',
+	'client_load.lua'
+}
+
+files {
+	'config.lua'
 }
