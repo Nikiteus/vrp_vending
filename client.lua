@@ -1,33 +1,56 @@
-local Proxy = module("vrp", "lib/Proxy")
-vRP = Proxy.getInterface("vRP")
+local Config = module("vrp_vending", "config")
 
-local Config = module("xnVending", "config")
-
-ShowNotification = function(str)
-	vRP.notify({str})
-end
-
-ServerCallbacks = {}
-CurrentRequestId = 0
-
-TriggerServerCallback = function(name, cb, ...)
-	ServerCallbacks[CurrentRequestId] = cb
-	TriggerServerEvent("xnVending:triggerServerCallback", name, CurrentRequestId, ...)
-	CurrentRequestId = (CurrentRequestId + 1) % 65535
-end
-
-RegisterNetEvent('xnVending:serverCallback')
-AddEventHandler('xnVending:serverCallback', function(requestId, ...)
-	if ServerCallbacks[requestId] then
-		ServerCallbacks[requestId](...)
-		ServerCallbacks[requestId] = nil
-	end
-end)
+local Vending = class("Vending", vRP.Extension)
+Vending.tunnel = {}
 
 local animPlaying = false
 local usingMachine = false
 local VendingObject = nil
 local machineModel = nil
+
+function Vending.tunnel:playAnim()
+	usingMachine = true
+	local machine = machineModel
+	local machineInfo = Config.Machines[machineModel]
+	local ped = PlayerPedId()
+	local position = GetOffsetFromEntityInWorldCoords(VendingObject, 0.0, -0.97, 0.05)
+	TaskTurnPedToFaceEntity(ped, VendingObject, -1)
+	ReqAnimDict(Config.DispenseDict[1])
+	RequestAmbientAudioBank("VENDING_MACHINE")
+	HintAmbientAudioBank("VENDING_MACHINE", 0, -1)
+	SetPedCurrentWeaponVisible(ped, false, true, 1, 0)
+	ReqTheModel(machineInfo.prop[i])
+	SetPedResetFlag(ped, 322, true)
+	if not IsEntityAtCoord(ped, position, 0.1, 0.1, 0.1, false, true, 0) then
+		TaskGoStraightToCoord(ped, position, 1.0, 20000, GetEntityHeading(VendingObject), 0.1)
+		while not IsEntityAtCoord(ped, position, 0.1, 0.1, 0.1, false, true, 0) do
+			Citizen.Wait(2000)
+		end
+	end
+	TaskTurnPedToFaceEntity(ped, VendingObject, -1)
+	Citizen.Wait(1000)
+	TaskPlayAnim(ped, Config.DispenseDict[1], Config.DispenseDict[2], 8.0, 5.0, -1, true, 1, 0, 0, 0)
+	Citizen.Wait(2500)
+	local canModel = CreateObjectNoOffset(machineInfo.prop[i], position, true, false, false)
+	SetEntityAsMissionEntity(canModel, true, true)
+	SetEntityProofs(canModel, false, true, false, false, false, false, 0, false)
+	AttachEntityToEntity(canModel, ped, GetPedBoneIndex(ped, 28422), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1, 1, 0, 0, 2, 1)
+	Citizen.Wait(1700)
+	ReqAnimDict(Config.PocketAnims[1])
+	TaskPlayAnim(ped, Config.PocketAnims[1], Config.PocketAnims[2], 8.0, 5.0, -1, true, 1, 0, 0, 0)
+	Citizen.Wait(1000)
+	ClearPedTasks(ped)
+	ReleaseAmbientAudioBank()
+	RemoveAnimDict(Config.DispenseDict[1])
+	RemoveAnimDict(Config.PocketAnims[1])
+	if DoesEntityExist(canModel) then
+		DetachEntity(canModel, true, true)
+		DeleteEntity(canModel)
+	end
+	SetModelAsNoLongerNeeded(machineInfo.prop[i])
+end
+
+vRP:registerExtension(Vending)
 
 Citizen.CreateThread(function()
     local waitTime = 500
@@ -41,54 +64,9 @@ Citizen.CreateThread(function()
 			local machineNames = machineInfo.name
 			for i = 1, #machineNames do
 				buttonsMessage[machineNames[i] .. " ($" .. machineInfo.price[i] .. ")"] = Config.PurchaseButtons[i]
-				if IsControlJustPressed(1, Config.PurchaseButtons[i]) then
-					TriggerServerCallback('xnVending:checkMoneyandInvent', function(response)
-						if response == "cash" then
-							ShowNotification("~r~У вас недостаточно денег")
-						elseif response == "inventory" then
-							ShowNotification("У вас недостаточно места в инвентаре ~y~" .. machineNames[i])
-						else
-							usingMachine = true
-							local ped = PlayerPedId()
-							local position = GetOffsetFromEntityInWorldCoords(VendingObject, 0.0, -0.97, 0.05)
-							TaskTurnPedToFaceEntity(ped, VendingObject, -1)
-							ReqAnimDict(Config.DispenseDict[1])
-							RequestAmbientAudioBank("VENDING_MACHINE")
-							HintAmbientAudioBank("VENDING_MACHINE", 0, -1)
-							SetPedCurrentWeaponVisible(ped, false, true, 1, 0)
-							ReqTheModel(machineInfo.prop[i])
-							SetPedResetFlag(ped, 322, true)
-							if not IsEntityAtCoord(ped, position, 0.1, 0.1, 0.1, false, true, 0) then
-								TaskGoStraightToCoord(ped, position, 1.0, 20000, GetEntityHeading(VendingObject), 0.1)
-								while not IsEntityAtCoord(ped, position, 0.1, 0.1, 0.1, false, true, 0) do
-									Citizen.Wait(2000)
-								end
-							end
-							TaskTurnPedToFaceEntity(ped, VendingObject, -1)
-							Citizen.Wait(1000)
-							TaskPlayAnim(ped, Config.DispenseDict[1], Config.DispenseDict[2], 8.0, 5.0, -1, true, 1, 0, 0, 0)
-							Citizen.Wait(2500)
-							local canModel = CreateObjectNoOffset(machineInfo.prop[i], position, true, false, false)
-							SetEntityAsMissionEntity(canModel, true, true)
-							SetEntityProofs(canModel, false, true, false, false, false, false, 0, false)
-							AttachEntityToEntity(canModel, ped, GetPedBoneIndex(ped, 28422), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1, 1, 0, 0, 2, 1)
-							Citizen.Wait(1700)
-							ReqAnimDict(Config.PocketAnims[1])
-							TaskPlayAnim(ped, Config.PocketAnims[1], Config.PocketAnims[2], 8.0, 5.0, -1, true, 1, 0, 0, 0)
-							Citizen.Wait(1000)
-							ClearPedTasks(ped)
-							ReleaseAmbientAudioBank()
-							RemoveAnimDict(Config.DispenseDict[1])
-							RemoveAnimDict(Config.PocketAnims[1])
-							if DoesEntityExist(canModel) then
-								DetachEntity(canModel, true, true)
-								DeleteEntity(canModel)
-							end
-							SetModelAsNoLongerNeeded(machineInfo.prop[i])
-							TriggerServerCallback('xnVending:checkMoneyandInvent', function(response) end, machine, i, true)
-							usingMachine = false
-						end
-					end, machine, i, false)
+				if IsControlJustReleased(1, Config.PurchaseButtons[i]) then
+					vRP.EXT.Vending.remote.checkMoneyandInvent(machine, i)
+					usingMachine = false
 				end
 			end
 			local scaleForm = setupScaleform("instructional_buttons", buttonsMessage)
@@ -105,7 +83,7 @@ function nearVendingMachine()
 	local playerLoc = GetEntityCoords(player, 0)
 
 	for machine, _  in pairs(Config.Machines) do
-		VendingObject = GetClosestObjectOfType(playerLoc, 0.6, machine, false)
+		VendingObject = GetClosestObjectOfType(playerLoc.x, playerLoc.y, playerLoc.z, 0.6, machine, false)
 		if DoesEntityExist(VendingObject) then
 			machineModel = machine
             return true
