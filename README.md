@@ -1,5 +1,7 @@
 Adaptation of xnVending for vRP 2
 
+Also, I added 3D text that displays on the vending machines instead of side messages.
+
 Original author: smallo92
 
 https://github.com/smallo92/xnVending

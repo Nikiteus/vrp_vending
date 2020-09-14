@@ -58,25 +58,61 @@ Citizen.CreateThread(function()
 		Citizen.Wait(waitTime)
         if nearVendingMachine() and not usingMachine and not IsPedInAnyVehicle(PlayerPedId(), 1) then
 			waitTime = 1
-			local buttonsMessage = {}
+			local message = {}
 			local machine = machineModel
 			local machineInfo = Config.Machines[machineModel]
 			local machineNames = machineInfo.name
+			local machineCoords = GetEntityCoords(VendingObject)
+			
 			for i = 1, #machineNames do
-				buttonsMessage[machineNames[i] .. " ($" .. machineInfo.price[i] .. ")"] = Config.PurchaseButtons[i]
+				message[i] = "Нажмите ~g~"..i.."~w~ чтобы купить "..machineNames[i].." ("..machineInfo.price[i].."$)"
+				DrawText3Ds(machineCoords.x, machineCoords.y, machineCoords.z, message[i], i - 1)
+				
 				if IsControlJustReleased(1, Config.PurchaseButtons[i]) then
 					vRP.EXT.Vending.remote.checkMoneyandInvent(machine, i)
 					usingMachine = false
 				end
 			end
-			local scaleForm = setupScaleform("instructional_buttons", buttonsMessage)
-			DrawScaleformMovieFullscreen(scaleForm, 255, 255, 255, 255, 0)
+			
+			DrawRect3Ds(machineCoords.x, machineCoords.y, machineCoords.z, GetMaxLineLength(message), #machineNames)
 			BlockWeaponWheelThisFrame()
         else
             waitTime = 500
 		end
 	end
 end)
+
+function GetMaxLineLength(text)
+	local result = 0
+	for i = 1, #text do
+		result = math.max(result, string.len(text[i]))
+	end
+	return result
+end
+
+function DrawText3Ds(x, y, z, text, line)
+    local onScreen, _x, _y = World3dToScreen2d(x, y, z)
+    
+    if onScreen then
+        SetTextScale(0.35, 0.35)
+        SetTextFont(4)
+        SetTextProportional(1)
+        SetTextColour(255, 255, 255, 215)
+        SetTextEntry("STRING")
+        SetTextCentre(1)
+		AddTextComponentString(text)
+        DrawText(_x, _y + 0.025 * line)
+    end
+end
+
+function DrawRect3Ds(x, y, z, length, linesCount)
+	local onScreen, _x, _y = World3dToScreen2d(x, y, z)
+    
+    if onScreen then
+		local factor = length / 380
+		DrawRect(_x, _y + (0.0125 * linesCount), 0.015 + factor, 0.005 + (0.025 * linesCount), 41, 11, 41, 68)
+	end
+end
 
 function nearVendingMachine()
 	local player = PlayerPedId()
