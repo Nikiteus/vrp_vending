@@ -19,7 +19,7 @@ function Vending.tunnel:playAnim()
 	RequestAmbientAudioBank("VENDING_MACHINE")
 	HintAmbientAudioBank("VENDING_MACHINE", 0, -1)
 	SetPedCurrentWeaponVisible(ped, false, true, 1, 0)
-	ReqTheModel(machineInfo.prop[i])
+	--ReqTheModel(machineInfo.prop[i])
 	SetPedResetFlag(ped, 322, true)
 	if not IsEntityAtCoord(ped, position, 0.1, 0.1, 0.1, false, true, 0) then
 		TaskGoStraightToCoord(ped, position, 1.0, 20000, GetEntityHeading(VendingObject), 0.1)
